@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Protektionismus-Planspiel</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --clr-bg:           #0f172a;
+      --clr-surface:      #1e293b;
+      --clr-card:         #334155;
+      --clr-accent:       #3b82f6;
+      --clr-accent-hover: #2563eb;
+      --clr-green:        #22c55e;
+      --clr-red:          #ef4444;
+      --clr-yellow:       #eab308;
+      --clr-orange:       #f97316;
+      --clr-text:         #f1f5f9;
+      --clr-muted:        #94a3b8;
+      --clr-border:       #475569;
+      --radius:           12px;
+      --shadow:           0 4px 24px rgba(0,0,0,.35);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--clr-bg);
+      color: var(--clr-text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* ===== Header ===== */
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+      border-bottom: 1px solid var(--clr-border);
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
+    .header-meta { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .badge .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--clr-green);
+      flex-shrink: 0;
+    }
+
+    /* ===== Main ===== */
+    .main { max-width: 1400px; margin: 0 auto; padding: 28px 24px 60px; }
+
+    /* ===== Countries Grid ===== */
+    .countries-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .country-card {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow);
+      transition: transform .15s ease, box-shadow .15s ease;
+      border-top-width: 3px;
+      overflow: hidden;
+    }
+    .country-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.5); }
+    .country-card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+    /* Satisfaction flash animation */
+    @keyframes flashGreen {
+      0%   { background: rgba(34,197,94,.18); }
+      100% { background: transparent; }
+    }
+    @keyframes flashRed {
+      0%   { background: rgba(239,68,68,.18); }
+      100% { background: transparent; }
+    }
+    .flash-green { animation: flashGreen .9s ease-out; }
+    .flash-red   { animation: flashRed .9s ease-out; }
+
+    /* Hemmnis-Banner */
+    .barrier-banner {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1500;
+      background: linear-gradient(90deg, #c2410c, #f97316);
+      color: #fff;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 10px 20px;
+      text-align: center;
+      transform: translateY(-100%);
+      transition: transform .35s ease;
+      box-shadow: 0 4px 16px rgba(0,0,0,.4);
+    }
+    .barrier-banner.show { transform: translateY(0); }
+
+    /* Trennlinie Handel & Regeln */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      color: var(--clr-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 600;
+    }
+    .section-divider::before,
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--clr-border);
+    }
+    .country-flag { font-size: 1.3rem; }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: 0.88rem;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: var(--clr-muted); }
+    .stat-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    .val-positive { color: var(--clr-green); }
+    .val-negative { color: var(--clr-red); }
+    .val-warning  { color: var(--clr-yellow); }
+    .val-zero     { color: var(--clr-muted); }
+
+    .production-section { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--clr-border); }
+    .production-section h4 {
+      font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--clr-muted); margin-bottom: 8px;
+    }
+    .prod-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 2px 0; }
+    .prod-row .prod-label { color: var(--clr-muted); }
+
+    /* ===== Panels ===== */
+    .panels { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    @media (min-width: 1024px) {
+      .countries-grid { grid-template-columns: repeat(5, 1fr); }
+    }
+    @media (max-width: 900px) {
+      .panels { grid-template-columns: 1fr; }
+      .header { padding: 16px 20px; }
+      .header h1 { font-size: 1.2rem; }
+      .main { padding: 20px 16px 48px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .countries-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+      .tab-bar { padding: 0 16px; }
+      .round-btn { flex-direction: column; }
+      .btn { min-height: 44px; }
+    }
+
+    .panel {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .panel h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 18px; }
+
+    /* ===== Trade Form ===== */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full-width { grid-column: 1 / -1; }
+    .form-group label {
+      font-size: 0.8rem; font-weight: 500; color: var(--clr-muted);
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .form-group select, .form-group input {
+      background: var(--clr-card);
+      border: 1px solid var(--clr-border);
+      border-radius: 8px;
+      color: var(--clr-text);
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: border-color .15s;
+    }
+    .form-group select:focus, .form-group input:focus {
+      outline: none;
+      border-color: var(--clr-accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.25);
+    }
+
+    /* ===== Buttons ===== */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; font-family: inherit; font-size: 0.9rem; font-weight: 600;
+      border: none; border-radius: 8px; padding: 11px 22px;
+      cursor: pointer; transition: background .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: var(--clr-accent); color: #fff; }
+    .btn-primary:hover { background: var(--clr-accent-hover); }
+    .btn-success { background: var(--clr-green); color: #fff; }
+    .btn-success:hover { background: #16a34a; }
+    .btn-danger { background: var(--clr-red); color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-outline { background: transparent; border: 1px solid var(--clr-border); color: var(--clr-text); }
+    .btn-outline:hover { background: var(--clr-card); }
+
+    .round-btn { margin-bottom: 28px; display: flex; gap: 12px; flex-wrap: wrap; }
+
+    /* ===== Rules list ===== */
+    .rules-list { list-style: none; padding: 0; }
+    .rules-list li {
+      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: 0.88rem; display: flex; align-items: flex-start; gap: 8px;
+    }
+    .rules-list li:last-child { border-bottom: none; }
+    .rule-icon { flex-shrink: 0; width: 20px; text-align: center; font-size: 0.85rem; }
+    .rules-sub { list-style: none; padding-left: 28px; margin-top: 4px; }
+    .rules-sub li {
+      border-bottom: none; padding: 3px 0;
+      color: var(--clr-muted); font-size: 0.82rem;
+    }
+
+    /* ===== Modal ===== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.65); z-index: 1000;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      max-width: 560px; width: 100%;
+      padding: 28px;
+      box-shadow: 0 16px 64px rgba(0,0,0,.6);
+      animation: modalIn .2s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(16px) scale(.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal-box h3 { font-size: 1.1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .modal-box p { font-size: 0.9rem; color: var(--clr-muted); line-height: 1.65; margin-bottom: 20px; }
+    .modal-box.modal-barrier { border-top: 3px solid var(--clr-orange); }
+    .modal-box.modal-success  { border-top: 3px solid var(--clr-green); }
+    .modal-box.modal-error    { border-top: 3px solid var(--clr-red); }
+
+    /* ===== Start Screen ===== */
+    .start-screen {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 70vh; text-align: center; gap: 20px;
+    }
+    .start-screen h2 { font-size: 2rem; font-weight: 700; }
+    .start-screen p { color: var(--clr-muted); max-width: 480px; font-size: 1rem; }
+    .btn-large { padding: 16px 40px; font-size: 1.05rem; border-radius: 10px; }
+
+    /* ===== Toast ===== */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--clr-green); color: #fff;
+      padding: 12px 20px; border-radius: 8px;
+      font-size: 0.88rem; font-weight: 600;
+      box-shadow: 0 4px 24px rgba(0,0,0,.4);
+      opacity: 0; transform: translateY(12px);
+      transition: all .25s ease; z-index: 900; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: var(--clr-red); }
+
+    /* ===== Satisfaction Bar ===== */
+    .satisfaction-bar-container {
+      margin-top: 4px; background: var(--clr-card);
+      border-radius: 4px; height: 6px; overflow: hidden;
+    }
+    .satisfaction-bar { height: 100%; border-radius: 4px; transition: width .4s ease, background .4s ease; }
+
+    /* ===== Endscreen ===== */
+    .endscreen-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.85);
+      z-index: 2000;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 24px 16px;
+    }
+    .endscreen-overlay.active { display: block; }
+
+    .endscreen-box {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px 24px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.7);
+      animation: modalIn .3s ease;
+    }
+    .endscreen-box h2 {
+      font-size: 1.4rem; font-weight: 700;
+      text-align: center; margin-bottom: 6px;
+    }
+    .endscreen-subtitle {
+      text-align: center; color: var(--clr-muted);
+      font-size: 0.88rem; margin-bottom: 20px;
+    }
+
+    /* Statistiken-Grid im Endscreen immer einspaltig */
+    .endscreen-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      margin-bottom: 0;
+    }
+
+    .ranking-table {
+      width: 100%; border-collapse: collapse; margin-bottom: 24px;
+    }
+    .ranking-table th {
+      font-size: 0.75rem; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--clr-muted);
+      padding: 6px 10px; text-align: left;
+      border-bottom: 1px solid var(--clr-border);
+    }
+    .ranking-table td {
+      padding: 10px 10px; font-size: 0.9rem;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      vertical-align: middle;
+    }
+    .ranking-table tr:last-child td { border-bottom: none; }
+    .rank-medal { font-size: 1.2rem; }
+    .rank-num { color: var(--clr-muted); font-weight: 600; }
+
+    .endscreen-note {
+      background: var(--clr-card);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 0.84rem;
+      color: var(--clr-muted);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    .endscreen-note strong { color: var(--clr-text); }
+    .endscreen-actions { display: flex; justify-content: center; gap: 12px; }
+
+    /* ===== Zeitleiste der Hemmnisse ===== */
+    .timeline-panel {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+    .timeline-panel h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; }
+    .timeline-list { list-style: none; padding: 0; position: relative; }
+    .timeline-list::before {
+      content: '';
+      position: absolute;
+      left: 10px; top: 6px; bottom: 6px;
+      width: 2px;
+      background: var(--clr-border);
+    }
+    .timeline-entry {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 6px 0 10px;
+      position: relative;
+    }
+    .timeline-dot {
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--clr-orange);
+      border: 2px solid var(--clr-bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; color: #fff;
+      z-index: 1;
+    }
+    .timeline-content { flex: 1; }
+    .timeline-title {
+      font-size: 0.88rem; font-weight: 600;
+      color: var(--clr-orange);
+      margin-bottom: 2px;
+    }
+    .timeline-text {
+      font-size: 0.82rem;
+      color: var(--clr-muted);
+      line-height: 1.5;
+    }
+
+    /* ===== Active Restrictions ===== */
+    .restrictions-panel {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+    .restrictions-panel h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; }
+    .restriction-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: 0.85rem; color: var(--clr-muted);
+    }
+    .restriction-item:last-child { border-bottom: none; }
+    .restriction-item .dot-red {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--clr-red); flex-shrink: 0;
+    }
+
+    /* ===== Tabs ===== */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--clr-border);
+      background: var(--clr-surface);
+      padding: 0 32px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--clr-muted);
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      padding: 14px 20px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+      margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--clr-text); }
+    .tab-btn.active {
+      color: var(--clr-accent);
+      border-bottom-color: var(--clr-accent);
+    }
+
+    /* ===== Stats layout ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) { .stats-grid { grid-template-columns: 1fr; } }
+
+    .stat-card {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .stat-card h3 {
+      font-size: 1rem; font-weight: 600; margin-bottom: 4px;
+    }
+    .stat-card .stat-card-sub {
+      font-size: 0.8rem; color: var(--clr-muted); margin-bottom: 16px;
+    }
+    .stat-card-full {
+      grid-column: 1 / -1;
+    }
+
+    .blocked-list { list-style: none; padding: 0; }
+    .blocked-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: 0.84rem;
+    }
+    .blocked-item:last-child { border-bottom: none; }
+    .blocked-count {
+      background: var(--clr-red);
+      color: #fff;
+      border-radius: 999px;
+      padding: 1px 9px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .no-data {
+      color: var(--clr-muted); font-size: 0.85rem; text-align: center;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== START SCREEN ===== -->
+<!-- ===== TUTORIAL OVERLAY ===== -->
+<div id="tutorial-overlay" style="
+  position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:3000;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px 16px;">
+  <div style="
+    background:var(--clr-surface);border:1px solid var(--clr-border);
+    border-radius:var(--radius);max-width:640px;width:100%;margin:0 auto;
+    padding:28px 24px;box-shadow:0 24px 80px rgba(0,0,0,.7);animation:modalIn .3s ease;
+    display:flex;flex-direction:column;">
+
+    <!-- Step indicators -->
+    <div style="display:flex;justify-content:center;gap:8px;margin-bottom:24px;" id="tut-dots"></div>
+
+    <!-- Step content -->
+    <div id="tut-content"></div>
+
+    <!-- Navigation (always visible at bottom) -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid var(--clr-border);">
+      <button class="btn btn-outline" id="tut-back" onclick="tutStep(-1)">&#8592; Zurück</button>
+      <span id="tut-step-label" style="font-size:0.82rem;color:var(--clr-muted);"></span>
+      <button class="btn btn-primary" id="tut-next" onclick="tutStep(1)">Weiter &#8594;</button>
+    </div>
+  </div>
+</div>
+
+<div id="start-screen" style="display:none;">
+  <div class="start-screen">
+    <h2>Protektionismus-Planspiel</h2>
+    <p>Simuliere internationalen Handel zwischen fünf Ländern und erlebe die Auswirkungen von Zöllen, Exportverboten und Subventionen auf Wohlstand und Zufriedenheit.</p>
+    <div id="start-actions" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <button class="btn btn-primary btn-large" onclick="startGame()">Neues Spiel starten</button>
+      <button class="btn btn-outline btn-large" id="continue-btn" onclick="continueGame()" style="display:none;">
+        &#x25B6; Spiel fortsetzen
+      </button>
+      <p id="save-info" style="font-size:0.8rem;color:var(--clr-muted);display:none;"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="game-screen" style="display:none;">
+
+  <header class="header">
+    <h1>Protektionismus-Planspiel</h1>
+    <div class="header-meta">
+      <span class="badge" id="round-badge"><span class="dot"></span> Runde 1</span>
+      <span class="badge" id="barrier-badge">Hemmnisse: 0 / 6</span>
+      <button class="btn btn-outline" style="padding:6px 14px;font-size:0.82rem;" onclick="resetGame()">&#x21BA; Neustart</button>
+    </div>
+  </header>
+
+  <!-- Tab navigation -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-btn-game" onclick="switchTab('game')">&#x1F3AE; Spiel</button>
+    <button class="tab-btn" id="tab-btn-stats" onclick="switchTab('stats')">&#x1F4CA; Statistiken</button>
+  </div>
+
+  <div class="main" id="panel-game">
+
+    <div class="round-btn" style="align-items:flex-start;flex-wrap:wrap;gap:16px;">
+      <button class="btn btn-primary" onclick="nextRound()">Nächste Runde starten</button>
+      <div style="background:var(--clr-surface);border:1px solid var(--clr-border);border-radius:8px;padding:10px 16px;font-size:0.8rem;color:var(--clr-muted);line-height:1.8;">
+        <span style="color:var(--clr-text);font-weight:600;">Ablauf am Rundenende: </span>
+        Produktion anwenden
+        <span style="color:var(--clr-border);margin:0 4px;">→</span>
+        Bonus <span style="color:var(--clr-green);">+5</span> oder Strafpunkte
+        <span style="color:var(--clr-border);margin:0 4px;">→</span>
+        neues Handelshemmnis
+      </div>
+    </div>
+
+    <!-- Country Cards -->
+    <div class="countries-grid" id="countries-container"></div>
+
+    <!-- Zeitleiste der Hemmnisse (ab erstem Hemmnis sichtbar) -->
+    <div class="timeline-panel" id="timeline-panel" style="display:none;">
+      <h2>&#x1F4DC; Bisherige Handelshemmnisse</h2>
+      <ul class="timeline-list" id="timeline-list"></ul>
+    </div>
+
+    <!-- Active Restrictions (shown only when any exist) -->
+    <div class="restrictions-panel" id="restrictions-panel" style="display:none;">
+      <h2>&#x1F6AB; Aktive Handelshemmnisse</h2>
+      <div id="restrictions-list"></div>
+    </div>
+
+    <!-- Trennlinie -->
+    <div class="section-divider">Handel &amp; Regeln</div>
+
+    <!-- Trade & Rules -->
+    <div class="panels">
+
+      <div class="panel">
+        <h2>Handel durchführen</h2>
+        <form id="trade-form" onsubmit="submitTrade(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="from">Verkäufer</label>
+              <select id="from">
+                <option value="USA">🇺🇸 USA</option>
+                <option value="Deutschland">🇩🇪 Deutschland</option>
+                <option value="China">🇨🇳 China</option>
+                <option value="Brasilien">🇧🇷 Brasilien</option>
+                <option value="Indien">🇮🇳 Indien</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="to">Käufer</label>
+              <select id="to">
+                <option value="USA">🇺🇸 USA</option>
+                <option value="Deutschland">🇩🇪 Deutschland</option>
+                <option value="China">🇨🇳 China</option>
+                <option value="Brasilien">🇧🇷 Brasilien</option>
+                <option value="Indien">🇮🇳 Indien</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="commodity">Ware</label>
+              <select id="commodity">
+                <option value="hightech">💻 Hightech</option>
+                <option value="resources">⛏️ Rohstoffe</option>
+                <option value="cars">🚗 Autos</option>
+                <option value="food">🌾 Lebensmittel</option>
+                <option value="clothes">👕 Kleidung</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="amount">Menge <span id="stock-hint" style="color:var(--clr-muted);font-weight:400;text-transform:none;letter-spacing:0;"></span></label>
+              <input type="number" id="amount" min="1" value="1">
+            </div>
+            <div class="form-group">
+              <label for="price">Preis pro Einheit</label>
+              <input type="number" id="price" min="1" value="10">
+            </div>
+            <div class="form-group" style="align-self:end;">
+              <button type="submit" class="btn btn-success" style="width:100%;">Handel abschicken</button>
+            </div>
+          </div>
+        </form>
+
+        <div id="last-prices-box" style="margin-top:18px; padding-top:14px; border-top:1px solid var(--clr-border);">
+          <div style="font-size:0.78rem; text-transform:uppercase; letter-spacing:.06em; color:var(--clr-muted); margin-bottom:8px;">Zuletzt gehandelter Preis</div>
+          <div id="last-prices-list" style="display:grid; grid-template-columns:1fr 1fr; gap:4px 16px;"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Strafregeln</h2>
+        <ul class="rules-list">
+          <li>
+            <span class="rule-icon" style="color:var(--clr-red);">&#x26A0;</span>
+            <span>Fehlende <strong>Hightech</strong>-Einheit: <strong>-10</strong> Zufriedenheit</span>
+          </li>
+          <li>
+            <span class="rule-icon" style="color:var(--clr-red);">&#x26A0;</span>
+            <span>Fehlende <strong>Auto</strong>-Einheit: <strong>-10</strong> Zufriedenheit</span>
+          </li>
+          <li>
+            <span class="rule-icon" style="color:var(--clr-yellow);">&#x26A0;</span>
+            <span>Fehlende <strong>Lebensmittel</strong>-Einheit: <strong>-5</strong> Zufriedenheit</span>
+          </li>
+          <li>
+            <span class="rule-icon" style="color:var(--clr-yellow);">&#x26A0;</span>
+            <span>Fehlende <strong>Kleidung</strong>-Einheit: <strong>-5</strong> Zufriedenheit</span>
+          </li>
+          <li>
+            <span class="rule-icon" style="color:var(--clr-orange);">&#x2699;</span>
+            <span>
+              Falls <strong>USA</strong> oder <strong>Deutschland</strong> keine Rohstoffe haben:
+              <ul class="rules-sub">
+                <li>&#8226; Keine Produktion von Hightech und Autos</li>
+                <li>&#8226; Rohstoffverbrauch wird auf 0 gesetzt</li>
+              </ul>
+            </span>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Statistics panel -->
+  <div class="main" id="panel-stats" style="display:none;">
+    <div class="stats-grid">
+
+      <!-- Chart 1: Satisfaction over time (full width) -->
+      <div class="stat-card stat-card-full">
+        <h3>Zufriedenheitsverlauf je Land</h3>
+        <p class="stat-card-sub">Entwicklung der Zufriedenheit nach jeder Runde. Hemmnisse sind als Einbrüche erkennbar.</p>
+        <div style="position:relative;height:280px;">
+          <canvas id="chart-satisfaction"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Total trade volume per round -->
+      <div class="stat-card">
+        <h3>Gesamthandelsvolumen pro Runde</h3>
+        <p class="stat-card-sub">Wie viele Einheiten wurden pro Runde insgesamt gehandelt?</p>
+        <div style="position:relative;height:220px;">
+          <canvas id="chart-volume"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 3: USA ↔ China trade -->
+      <div class="stat-card">
+        <h3>Handelsvolumen USA ↔ China</h3>
+        <p class="stat-card-sub">Wie viele Einheiten wurden pro Runde zwischen USA und China gehandelt?</p>
+        <div style="position:relative;height:220px;">
+          <canvas id="chart-usa-china"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 4: Blocked attempts -->
+      <div class="stat-card stat-card-full">
+        <h3>Geblockte Handelsversuche</h3>
+        <p class="stat-card-sub">Wie oft wurde versucht, trotz aktivem Handelshemmnis zu handeln?</p>
+        <div id="blocked-stats"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Endscreen -->
+<div class="endscreen-overlay" id="endscreen-overlay">
+  <div class="endscreen-box">
+    <h2>&#x1F3C6; Spielende – Auswertung</h2>
+
+    <!-- Endscreen tabs -->
+    <div style="display:flex;border-bottom:1px solid var(--clr-border);margin:12px 0 20px;overflow-x:auto;">
+      <button class="tab-btn active" id="end-tab-btn-ranking" onclick="switchEndTab('ranking')" style="font-size:0.83rem;padding:10px 14px;white-space:nowrap;">&#x1F4CA; Ranking</button>
+      <button class="tab-btn" id="end-tab-btn-prices" onclick="switchEndTab('prices')" style="font-size:0.83rem;padding:10px 14px;white-space:nowrap;">&#x1F4B0; Durchschnittspreise</button>
+      <button class="tab-btn" id="end-tab-btn-stats" onclick="switchEndTab('stats')" style="font-size:0.83rem;padding:10px 14px;white-space:nowrap;">&#x1F4C8; Statistiken</button>
+    </div>
+
+    <!-- Tab: Ranking -->
+    <div id="end-panel-ranking">
+      <p class="endscreen-subtitle">Alle 6 Handelshemmnisse wurden eingeführt. Hier ist das Ergebnis nach 7 Runden.</p>
+      <table class="ranking-table" id="ranking-table"></table>
+      <div class="endscreen-note">
+        <strong>Gruppenvergleich:</strong> Vergleicht euer Ergebnis mit den anderen Gruppen, die dasselbe Land gespielt haben.
+        Das Land mit der höchsten <strong>Zufriedenheit</strong> gewinnt den Gruppenvergleich.
+      </div>
+    </div>
+
+    <!-- Tab: Durchschnittspreise -->
+    <div id="end-panel-prices" style="display:none;">
+      <p class="endscreen-subtitle">Durchschnittlicher Handelspreis je Gut pro Runde (nur Runden mit mind. einem Handel).</p>
+      <div style="position:relative;height:260px;">
+        <canvas id="chart-avg-prices"></canvas>
+      </div>
+    </div>
+
+    <!-- Tab: Statistiken -->
+    <div id="end-panel-stats" style="display:none;">
+      <p class="endscreen-subtitle">Vollständige Spielstatistiken.</p>
+      <div class="endscreen-stats-grid">
+        <div class="stat-card">
+          <h3>Zufriedenheitsverlauf je Land</h3>
+          <p class="stat-card-sub">Entwicklung der Zufriedenheit nach jeder Runde.</p>
+          <div style="position:relative;height:220px;">
+            <canvas id="chart-satisfaction-end"></canvas>
+          </div>
+        </div>
+        <div class="stat-card">
+          <h3>Gesamthandelsvolumen pro Runde</h3>
+          <p class="stat-card-sub">Wie viele Einheiten wurden pro Runde gehandelt?</p>
+          <div style="position:relative;height:200px;">
+            <canvas id="chart-volume-end"></canvas>
+          </div>
+        </div>
+        <div class="stat-card">
+          <h3>Handelsvolumen USA ↔ China</h3>
+          <p class="stat-card-sub">Einheiten pro Runde zwischen USA und China.</p>
+          <div style="position:relative;height:200px;">
+            <canvas id="chart-usa-china-end"></canvas>
+          </div>
+        </div>
+        <div class="stat-card">
+          <h3>Geblockte Handelsversuche</h3>
+          <p class="stat-card-sub">Wie oft wurde trotz aktivem Hemmnis versucht zu handeln?</p>
+          <div id="blocked-stats-end"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="endscreen-actions" style="margin-top:24px;">
+      <button class="btn btn-primary" onclick="resetGame()">&#x21BA; Neu starten</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hemmnis-Banner -->
+<div class="barrier-banner" id="barrier-banner"></div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box" id="modal-box">
+    <h3 id="modal-title"></h3>
+    <p id="modal-body"></p>
+    <button class="btn btn-outline" onclick="closeModal()">Verstanden</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+
+<script>
+// =============================================================================
+// SPIELKONFIGURATION
+// =============================================================================
+
+const DEFAULT_COUNTRIES = {
+  'USA':         {money: 50, satisfaction: 80, hightech: 3, resources: 2, cars: 1, food: 1, clothes: 1},
+  'Deutschland': {money: 50, satisfaction: 80, hightech: 2, resources: 1, cars: 3, food: 2, clothes: 2},
+  'China':       {money: 50, satisfaction: 80, hightech: 1, resources: 2, cars: 1, food: 1, clothes: 3},
+  'Brasilien':   {money: 50, satisfaction: 80, hightech: 1, resources: 3, cars: 1, food: 2, clothes: 2},
+  'Indien':      {money: 50, satisfaction: 80, hightech: 1, resources: 1, cars: 0, food: 2, clothes: 3},
+};
+
+const DEFAULT_PRODUCTION = {
+  'USA':         {hightech:  2, resources: -2, cars:  1, food: -1, clothes: -2},
+  'Deutschland': {hightech:  1, resources: -3, cars:  2, food: -2, clothes: -2},
+  'China':       {hightech: -1, resources:  2, cars: -1, food: -1, clothes:  3},
+  'Brasilien':   {hightech: -1, resources:  3, cars: -1, food:  2, clothes: -1},
+  'Indien':      {hightech: -1, resources:  1, cars: -1, food:  2, clothes:  3},
+};
+
+const BARRIER_TITLES = [
+  'EU-Agrarsubventionen – Deutschland zahlt 4 GE/Runde, Lebensmittelproduktion DE verbessert sich.',
+  'China subventioniert Autoindustrie – Chinas Autoproduktion steigt, USA verliert 1 Auto/Runde.',
+  'USA verhängt Hightech-Exportverbot nach China.',
+  'USA erhebt 50 % Zoll auf alle chinesischen Importe.',
+  'China verhängt Exportverbot für Rohstoffe in die USA.',
+  'EU-Lieferkettengesetz – Deutschland darf keine Kleidung mehr aus China kaufen.',
+];
+
+const BARRIER_DESCRIPTIONS = [
+  "Bauern streiken über ganz Europa, da sie mit den Preisen von Agrarprodukten der Entwicklungsländern nicht mehr mithalten können. Die EU entscheidet sich deshalb zu Agrarsubventionen. Deutschland subventioniert seine Bauern mit 4 Geldeinheiten pro Runde, dadurch verändert sich jedoch die Lebensmittelproduktion von Deutschland von -2 auf -1.",
+  "China möchte Fuß in der Autoproduktion fassen. Um die anfänglichen Wettbewerbsnachteile gegenüber der führenden Autonation Deutschland auszugleichen, wird die noch junge chinesische Autoindustrie massiv subventioniert (Gründungssubventionen von 20 Geldeinheiten, um anfängliche Verluste bei der Autoproduktion auszugleichen). Die chinesische Autoproduktion erhöht sich dadurch um 1 Einheit. Die USA ist jetzt nicht mehr wettbewerbsfähig und muss seine Autoproduktion zurückfahren, wodurch sich die Produktion um 1 Auto verringert.",
+  "Die USA verdächtigt China der High-Tech Spionage und verhängt für heimische Produzenten ein Exportverbot von Hightech-Produkten nach China.",
+  "Die USA sieht unfaire Handelspraktiken seitens China (u.a. Industriesubventionen, High-Tech-Spionage) und möchte zum Gegenschlag ausholen. Es wird für alle chinesischen Importe ein Zoll von 50% erhoben, d.h. chinesische Exporteure bekommen für Warenlieferungen zu den USA unterm Strich nur 50% des Preises.",
+  "China weist die Unterstellungen der USA von sich und verhängt ein Exportverbot von Rohstoffen in die USA.",
+  "Die EU führt das sog. Lieferkettengesetz ein. Von nun an soll die Einhaltung von Menschenrechten in globalen Lieferketten gewährleistet sein. Nachforschungen haben ergeben, dass dies bei der chinesischen Kleiderproduktion nicht der Fall ist. Die EU verhängt ein Importverbot von chinesischer Kleidung, d.h. Deutschland darf keine Kleidung mehr von China kaufen.",
+];
+
+const RESTRICTION_LABELS = {
+  'USA_hightech_to_China':    '🚫 USA darf kein Hightech nach China exportieren',
+  'china_import_tariff':      '💸 50 % Zoll auf alle chinesischen Importe in die USA',
+  'china_resources_to_USA':   '🚫 China darf keine Rohstoffe in die USA exportieren',
+  'china_clothes_to_Germany': '🚫 Deutschland darf keine Kleidung aus China kaufen',
+};
+
+const FLAGS = {
+  'USA': '🇺🇸', 'Deutschland': '🇩🇪',
+  'China': '🇨🇳', 'Brasilien': '🇧🇷', 'Indien': '🇮🇳'
+};
+
+const ITEM_LABELS = {
+  hightech: 'Hightech', resources: 'Rohstoffe',
+  cars: 'Autos', food: 'Lebensmittel', clothes: 'Kleidung'
+};
+
+// Nur Emoji (Spielscreen)
+const ITEM_EMOJI = {
+  hightech:  '💻',
+  resources: '⛏️',
+  cars:      '🚗',
+  food:      '🌾',
+  clothes:   '👕',
+};
+
+// Emoji + Text (Tutorial, Statistiken, Endscreen)
+const ITEM_LABELS_FULL = {
+  hightech:  '💻 Hightech',
+  resources: '⛏️ Rohstoffe',
+  cars:      '🚗 Autos',
+  food:      '🌾 Lebensmittel',
+  clothes:   '👕 Kleidung',
+};
+
+// =============================================================================
+// SPIELZUSTAND
+// =============================================================================
+
+let game = null;
+
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function createNewGame() {
+  const g = {
+    countries:          deepClone(DEFAULT_COUNTRIES),
+    production:         deepClone(DEFAULT_PRODUCTION),
+    round:              1,
+    barrier_index:      0,
+    trade_restrictions: {},
+    last_barrier:       '',
+    last_prices:        {},
+    satisfaction_history: [],
+    trade_log:          [],
+    blocked_log:        [],
+  };
+  // Initial snapshot (before any rounds)
+  snapshotSatisfaction(g);
+  return g;
+}
+
+// =============================================================================
+// SPIELLOGIK (portiert aus Python)
+// =============================================================================
+
+/** Hemmnis 1 – EU-Agrarsubventionen */
+function barrier_1(g) {
+  g.countries['Deutschland'].money -= 4;
+  g.production['Deutschland'].food = -1;
+}
+
+/** Hemmnis 2 – China subventioniert Autoindustrie */
+function barrier_2(g) {
+  g.countries['China'].money -= 20;
+  g.production['USA'].cars   = Math.max(0, g.production['USA'].cars - 1);
+  g.production['China'].cars = Math.min(0, g.production['China'].cars + 1);
+}
+
+/** Hemmnis 3 – USA-Exportverbot Hightech nach China */
+function barrier_3(g) {
+  g.trade_restrictions['USA_hightech_to_China'] = true;
+}
+
+/** Hemmnis 4 – 50 % Zoll auf chinesische Importe in USA */
+function barrier_4(g) {
+  g.trade_restrictions['china_import_tariff'] = 0.5;
+}
+
+/** Hemmnis 5 – China-Exportverbot Rohstoffe in die USA */
+function barrier_5(g) {
+  g.trade_restrictions['china_resources_to_USA'] = true;
+}
+
+/** Hemmnis 6 – EU-Lieferkettengesetz: keine CN-Kleidung nach DE */
+function barrier_6(g) {
+  g.trade_restrictions['china_clothes_to_Germany'] = true;
+}
+
+const BARRIERS = [barrier_1, barrier_2, barrier_3, barrier_4, barrier_5, barrier_6];
+
+// Schritt-Tabellen für anteilige Industrieproduktion je nach verfügbaren Rohstoffen.
+// Jede Zeile: { resources: verbrauchte Rohstoffe, hightech: Ertrag, cars: Ertrag }
+const PRODUCTION_STEPS = {
+  'Deutschland': [
+    { resources: 0, hightech: 0, cars: 0 }, // 0 Rohstoffe
+    { resources: 1, hightech: 0, cars: 1 }, // 1 Rohstoff  → 1 Auto
+    { resources: 2, hightech: 1, cars: 1 }, // 2 Rohstoffe → 1 Hightech, 1 Auto
+    { resources: 3, hightech: 1, cars: 2 }, // 3 Rohstoffe → 1 Hightech, 2 Autos (voll)
+  ],
+  'USA': [
+    { resources: 0, hightech: 0, cars: 0 }, // 0 Rohstoffe
+    { resources: 1, hightech: 1, cars: 0 }, // 1 Rohstoff  → 1 Hightech
+    { resources: 2, hightech: 2, cars: 1 }, // 2 Rohstoffe → 2 Hightech, 1 Auto (voll)
+  ],
+};
+
+function applyProduction(g) {
+  for (const country of Object.keys(g.production)) {
+    const prod = g.production[country];
+    let effect;
+
+    if (['USA', 'Deutschland'].includes(country)) {
+      const available = g.countries[country].resources;
+      const steps = PRODUCTION_STEPS[country];
+      // Höchsten Schritt wählen, dessen Rohstoffbedarf gedeckt ist
+      const step = [...steps].reverse().find(s => available >= s.resources) || steps[0];
+      effect = {
+        hightech:  step.hightech,
+        cars:      step.cars,
+        resources: -step.resources,
+        food:      prod.food,
+        clothes:   prod.clothes,
+      };
+    } else {
+      effect = prod;
+    }
+
+    for (const item of Object.keys(effect)) {
+      g.countries[country][item] += effect[item];
+    }
+  }
+}
+
+function applyBonusAndSanctions(g) {
+  const consumptionGoods = ['hightech', 'cars', 'food', 'clothes'];
+  const penaltyMap = [['hightech', 10], ['cars', 10], ['food', 5], ['clothes', 5]];
+
+  for (const country of Object.keys(g.countries)) {
+    const state = g.countries[country];
+
+    // +5 Bonus wenn alle Konsumgüter gedeckt sind
+    const allMet = consumptionGoods.every(item => state[item] >= 0);
+    if (allMet) {
+      state.satisfaction = Math.min(100, state.satisfaction + 5);
+    }
+
+    // Malus für jedes nicht gedeckte Konsumgut
+    for (const [item, penalty] of penaltyMap) {
+      if (state[item] < 0) {
+        state.satisfaction += state[item] * penalty; // negativ => Abzug
+        state[item] = 0;
+      }
+    }
+  }
+}
+
+// Hemmnis 1 kostet DE dauerhaft 4 Geld/Runde ab dem Zeitpunkt der Aktivierung.
+// Die barrier_1-Funktion zieht einmalig Geld ab; für Folgerunden merken wir uns
+// das im Spielzustand über ein Flag.
+function applyOngoingCosts(g) {
+  if (g.barrier_index > 0) {
+    // Hemmnis 1 (Index 0) ist aktiv: -4 Geld/Runde für Deutschland
+    g.countries['Deutschland'].money -= 4;
+  }
+}
+
+function snapshotSatisfaction(g) {
+  const snap = { round: g.round };
+  for (const country of Object.keys(g.countries)) {
+    snap[country] = g.countries[country].satisfaction;
+  }
+  g.satisfaction_history.push(snap);
+}
+
+function applyRound(g) {
+  // Laufende Kosten (Subventionen) anwenden
+  applyOngoingCosts(g);
+  applyProduction(g);
+  applyBonusAndSanctions(g);
+
+  // Nächstes Hemmnis aktivieren
+  if (g.barrier_index < BARRIERS.length) {
+    BARRIERS[g.barrier_index](g);
+    g.last_barrier = BARRIER_DESCRIPTIONS[g.barrier_index];
+    g.barrier_index += 1;
+  } else {
+    g.last_barrier = '';
+  }
+
+  g.round += 1;
+  snapshotSatisfaction(g);
+}
+
+function executeTrade(g, from, to, commodity, amount, price) {
+  // Restriktionen prüfen
+  if (commodity === 'hightech' && from === 'USA' && to === 'China') {
+    if (g.trade_restrictions['USA_hightech_to_China']) {
+      g.blocked_log.push({round: g.round, from, to, commodity, restriction: 'USA_hightech_to_China'});
+      return {error: 'Handel nicht möglich: USA exportiert keine Hightech nach China.'};
+    }
+  }
+  if (commodity === 'resources' && from === 'China' && to === 'USA') {
+    if (g.trade_restrictions['china_resources_to_USA']) {
+      g.blocked_log.push({round: g.round, from, to, commodity, restriction: 'china_resources_to_USA'});
+      return {error: 'Handel nicht möglich: China exportiert keine Rohstoffe in die USA.'};
+    }
+  }
+  if (commodity === 'clothes' && from === 'China' && to === 'Deutschland') {
+    if (g.trade_restrictions['china_clothes_to_Germany']) {
+      g.blocked_log.push({round: g.round, from, to, commodity, restriction: 'china_clothes_to_Germany'});
+      return {error: 'Handel nicht möglich: Deutschland darf keine chinesische Kleidung kaufen.'};
+    }
+  }
+
+  // Zoll anwenden
+  let effectivePrice = price;
+  if (to === 'USA' && from === 'China') {
+    const tariff = g.trade_restrictions['china_import_tariff'];
+    if (tariff) effectivePrice = price * tariff;
+  }
+
+  const seller = g.countries[from];
+  const buyer  = g.countries[to];
+  const total  = effectivePrice * amount;
+
+  if (buyer.money < total)
+    return {error: 'Nicht genügend Geld beim Käufer.'};
+
+  seller[commodity] -= amount;
+  buyer[commodity]  += amount;
+  buyer.money       -= total;
+  seller.money      += total;
+
+  g.last_prices[commodity] = price;
+  g.trade_log.push({round: g.round, from, to, commodity, amount, price});
+
+  return {ok: true};
+}
+
+// =============================================================================
+// STATISTIKEN
+// =============================================================================
+
+const COUNTRY_COLORS = {
+  'USA':         '#3b82f6',
+  'Deutschland': '#f59e0b',
+  'China':       '#ef4444',
+  'Brasilien':   '#22c55e',
+  'Indien':      '#a855f7',
+};
+
+// Gedämpfte Akzentfarben für Karten-Oberleiste (weniger satt)
+const COUNTRY_ACCENT = {
+  'USA':         'rgba(59,130,246,.45)',
+  'Deutschland': 'rgba(245,158,11,.45)',
+  'China':       'rgba(239,68,68,.45)',
+  'Brasilien':   'rgba(34,197,94,.45)',
+  'Indien':      'rgba(168,85,247,.45)',
+};
+
+let chartInstances = {};
+
+function switchTab(tab) {
+  const isGame = tab === 'game';
+  document.getElementById('panel-game').style.display  = isGame ? '' : 'none';
+  document.getElementById('panel-stats').style.display = isGame ? 'none' : '';
+  document.getElementById('tab-btn-game').classList.toggle('active', isGame);
+  document.getElementById('tab-btn-stats').classList.toggle('active', !isGame);
+  if (!isGame) renderStats();
+}
+
+function destroyCharts() {
+  for (const key of Object.keys(chartInstances)) {
+    chartInstances[key].destroy();
+  }
+  chartInstances = {};
+}
+
+function renderStats() {
+  if (!game) return;
+  destroyCharts();
+
+  const g = game;
+  const countries = ['USA', 'Deutschland', 'China', 'Brasilien', 'Indien'];
+
+  // ── Chart 1: Satisfaction over time ──────────────────────────────────────
+  const satLabels = g.satisfaction_history.map((s, i) => i === 0 ? 'Start' : 'Runde ' + (i));
+  const satDatasets = countries.map(c => ({
+    label: c,
+    data: g.satisfaction_history.map(s => s[c]),
+    borderColor: COUNTRY_COLORS[c],
+    backgroundColor: COUNTRY_COLORS[c] + '22',
+    borderWidth: 2,
+    pointRadius: 4,
+    tension: 0.3,
+    fill: false,
+  }));
+
+  chartInstances['satisfaction'] = new Chart(
+    document.getElementById('chart-satisfaction'),
+    {
+      type: 'line',
+      data: { labels: satLabels, datasets: satDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12 } } } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+          y: { min: 0, max: 110, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+        },
+      },
+    }
+  );
+
+  // ── Chart 2: Total trade volume per round ─────────────────────────────────
+  const rounds = Array.from({length: g.round - 1}, (_, i) => i + 1);
+  const volData = rounds.map(r => {
+    return g.trade_log
+      .filter(t => t.round === r)
+      .reduce((sum, t) => sum + t.amount, 0);
+  });
+
+  if (rounds.length === 0) {
+    document.getElementById('chart-volume').parentElement.innerHTML =
+      '<p class="no-data">Noch kein Handel stattgefunden.</p>';
+  } else {
+    chartInstances['volume'] = new Chart(
+      document.getElementById('chart-volume'),
+      {
+        type: 'bar',
+        data: {
+          labels: rounds.map(r => 'Runde ' + r),
+          datasets: [{
+            label: 'Einheiten',
+            data: volData,
+            backgroundColor: '#3b82f688',
+            borderColor: '#3b82f6',
+            borderWidth: 1,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+            y: { beginAtZero: true, ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: '#334155' } },
+          },
+        },
+      }
+    );
+  }
+
+  // ── Chart 3: USA ↔ China trade per round ─────────────────────────────────
+  const usaChinaData = rounds.map(r => {
+    return g.trade_log
+      .filter(t => t.round === r && (
+        (t.from === 'USA' && t.to === 'China') ||
+        (t.from === 'China' && t.to === 'USA')
+      ))
+      .reduce((sum, t) => sum + t.amount, 0);
+  });
+
+  if (rounds.length === 0) {
+    document.getElementById('chart-usa-china').parentElement.innerHTML =
+      '<p class="no-data">Noch kein Handel stattgefunden.</p>';
+  } else {
+    chartInstances['usaChina'] = new Chart(
+      document.getElementById('chart-usa-china'),
+      {
+        type: 'bar',
+        data: {
+          labels: rounds.map(r => 'Runde ' + r),
+          datasets: [{
+            label: 'Einheiten',
+            data: usaChinaData,
+            backgroundColor: '#ef444488',
+            borderColor: '#ef4444',
+            borderWidth: 1,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+            y: { beginAtZero: true, ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: '#334155' } },
+          },
+        },
+      }
+    );
+  }
+
+  // ── Chart 4: Blocked trade attempts ──────────────────────────────────────
+  const blockedEl = document.getElementById('blocked-stats');
+  if (g.blocked_log.length === 0) {
+    blockedEl.innerHTML = '<p class="no-data">Noch keine Handelsversuche geblockt.</p>';
+  } else {
+    const counts = {};
+    const labels = {
+      'USA_hightech_to_China':    '🚫 USA → China: Hightech',
+      'china_resources_to_USA':   '🚫 China → USA: Rohstoffe',
+      'china_clothes_to_Germany': '🚫 China → Deutschland: Kleidung',
+    };
+    for (const b of g.blocked_log) {
+      counts[b.restriction] = (counts[b.restriction] || 0) + 1;
+    }
+    let html = '<ul class="blocked-list">';
+    for (const [key, count] of Object.entries(counts)) {
+      html += '<li class="blocked-item">'
+            + '<span class="blocked-count">' + count + 'x</span>'
+            + '<span>' + (labels[key] || key) + '</span>'
+            + '</li>';
+    }
+    html += '<li class="blocked-item" style="border-top:1px solid var(--clr-border);margin-top:6px;padding-top:10px;">'
+          + '<span class="blocked-count">' + g.blocked_log.length + 'x</span>'
+          + '<span style="font-weight:600;">Gesamt</span>'
+          + '</li>';
+    html += '</ul>';
+    blockedEl.innerHTML = html;
+  }
+}
+
+// =============================================================================
+// UI
+// =============================================================================
+
+let lastBarrierShown = '';
+
+function valueClass(val) {
+  if (val > 0) return 'val-positive';
+  if (val < 0) return 'val-negative';
+  return 'val-zero';
+}
+
+function statColorClass(val, warn, danger) {
+  if (val <= danger) return 'val-negative';
+  if (val <= warn)   return 'val-warning';
+  return 'val-positive';
+}
+
+function satisfactionColor(val) {
+  if (val >= 70) return 'var(--clr-green)';
+  if (val >= 40) return 'var(--clr-yellow)';
+  return 'var(--clr-red)';
+}
+
+/** Berechnet den projizierten Warenstand nach der nächsten Runde (liest nur, ändert nichts). */
+function projectProduction(g, country) {
+  const prod = g.production[country];
+  const c    = g.countries[country];
+  const items = ['hightech', 'resources', 'cars', 'food', 'clothes'];
+  const result = {};
+  items.forEach(item => result[item] = c[item]);
+
+  if (['USA', 'Deutschland'].includes(country)) {
+    const available = c.resources;
+    const steps = PRODUCTION_STEPS[country];
+    const step = [...steps].reverse().find(s => available >= s.resources) || steps[0];
+    result.hightech  += step.hightech;
+    result.cars      += step.cars;
+    result.resources += -step.resources;
+    result.food      += prod.food;
+    result.clothes   += prod.clothes;
+  } else {
+    items.forEach(item => result[item] += prod[item]);
+  }
+  return result;
+}
+
+function renderGame() {
+  const g = game;
+
+  document.getElementById('round-badge').innerHTML =
+    '<span class="dot"></span> Runde ' + g.round;
+  document.getElementById('barrier-badge').textContent =
+    'Hemmnisse: ' + g.barrier_index + ' / 6';
+
+  const items = ['hightech', 'resources', 'cars', 'food', 'clothes'];
+  let html = '';
+
+  for (const country of Object.keys(g.countries)) {
+    const c = g.countries[country];
+    const p = g.production[country];
+    const flag = FLAGS[country] || '';
+    const satClamped = Math.max(0, Math.min(100, c.satisfaction));
+
+    const accent = COUNTRY_ACCENT[country] || 'var(--clr-border)';
+    html += '<div class="country-card" id="card-' + country + '" style="border-top-color:' + accent + ';">';
+    html += '  <h3><span class="country-flag">' + flag + '</span> ' + country + '</h3>';
+
+    html += '  <div class="stat-row"><span class="stat-label">Geld</span>';
+    html += '    <span class="stat-value ' + statColorClass(c.money, 30, 10) + '">' + Math.round(c.money) + '</span></div>';
+
+    html += '  <div class="stat-row"><span class="stat-label">Zufriedenheit</span>';
+    html += '    <span class="stat-value ' + statColorClass(c.satisfaction, 50, 25) + '">' + c.satisfaction + '</span></div>';
+
+    html += '  <div class="satisfaction-bar-container">';
+    html += '    <div class="satisfaction-bar" style="width:' + satClamped + '%;background:' + satisfactionColor(c.satisfaction) + ';"></div>';
+    html += '  </div>';
+
+    const proj = projectProduction(g, country);
+    const consumptionGoods = ['hightech', 'cars', 'food', 'clothes'];
+    const hasDeficit = consumptionGoods.some(item => proj[item] < 0);
+
+    // Defizit-Warnung oben auf der Karte
+    if (hasDeficit) {
+      html += '<div style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);border-radius:6px;padding:5px 10px;font-size:0.78rem;color:#ef4444;margin-bottom:10px;">'
+            + '⚠️ Defizit droht – handelt vor der nächsten Runde!'
+            + '</div>';
+    }
+
+    // Warenvorräte mit Prognose-Spalte (feste Breiten für saubere Ausrichtung)
+    const COL = '1fr 38px 58px';
+    html += '<div style="display:grid;grid-template-columns:' + COL + ';align-items:center;'
+          + 'font-size:0.72rem;color:var(--clr-muted);padding:3px 0 5px;border-bottom:1px solid rgba(255,255,255,.06);">'
+          + '<span></span>'
+          + '<span style="text-align:center;">Jetzt</span>'
+          + '<span style="text-align:center;">Nach Runde</span>'
+          + '</div>';
+
+    items.forEach(function(item) {
+      const after = proj[item];
+      const afterClass = after < 0 ? 'val-negative' : after === 0 ? 'val-zero' : 'val-positive';
+      const rowBg = item !== 'resources' && after < 0 ? 'background:rgba(239,68,68,.07);' : '';
+      html += '<div class="stat-row" style="display:grid;grid-template-columns:' + COL + ';align-items:center;' + rowBg + '">';
+      html += '  <span class="stat-label" title="' + ITEM_LABELS[item] + '">' + ITEM_EMOJI[item] + '</span>';
+      html += '  <span class="stat-value ' + valueClass(c[item]) + '" style="text-align:center;">' + c[item] + '</span>';
+      html += '  <span class="stat-value ' + afterClass + '" style="text-align:center;">' + after + '</span>';
+      html += '</div>';
+    });
+
+    html += '<div class="production-section"><h4>Produktion / Runde</h4>';
+    items.forEach(function(item) {
+      const v = p[item];
+      const prefix = v > 0 ? '+' : '';
+      html += '<div class="prod-row"><span class="prod-label" title="' + ITEM_LABELS[item] + '">' + ITEM_EMOJI[item] + '</span>';
+      html += '  <span class="stat-value ' + valueClass(v) + '">' + prefix + v + '</span></div>';
+    });
+    html += '</div>';
+
+    html += '</div>';
+  }
+
+  document.getElementById('countries-container').innerHTML = html;
+
+  // Aktive Restriktionen anzeigen
+  const panel = document.getElementById('restrictions-panel');
+  const list  = document.getElementById('restrictions-list');
+  const activeKeys = Object.keys(g.trade_restrictions);
+
+  if (activeKeys.length === 0) {
+    panel.style.display = 'none';
+  } else {
+    panel.style.display = '';
+    let rhtml = '';
+    for (const key of activeKeys) {
+      const label = RESTRICTION_LABELS[key] || key;
+      rhtml += '<div class="restriction-item"><span class="dot-red"></span><span>' + label + '</span></div>';
+    }
+    list.innerHTML = rhtml;
+  }
+
+  // Zeitleiste aktualisieren
+  const timelinePanel = document.getElementById('timeline-panel');
+  const timelineList  = document.getElementById('timeline-list');
+  if (g.barrier_index === 0) {
+    timelinePanel.style.display = 'none';
+  } else {
+    timelinePanel.style.display = '';
+    let thtml = '';
+    for (let i = 0; i < g.barrier_index; i++) {
+      thtml += '<li class="timeline-entry">'
+             + '  <div class="timeline-dot">' + (i + 1) + '</div>'
+             + '  <div class="timeline-content">'
+             + '    <div class="timeline-title">Hemmnis ' + (i + 1) + '</div>'
+             + '    <div class="timeline-text">' + BARRIER_TITLES[i] + '</div>'
+             + '  </div>'
+             + '</li>';
+    }
+    timelineList.innerHTML = thtml;
+  }
+
+  // Letzte Preise aktualisieren
+  const pricesList = document.getElementById('last-prices-list');
+  const allItems = ['hightech', 'resources', 'cars', 'food', 'clothes'];
+  let phtml = '';
+  let anyPrice = false;
+  for (const item of allItems) {
+    if (g.last_prices[item] !== undefined) {
+      anyPrice = true;
+      phtml += '<div style="font-size:0.84rem;padding:3px 0;display:flex;justify-content:space-between;gap:8px;">'
+             + '<span style="color:var(--clr-muted);">' + ITEM_LABELS_FULL[item] + '</span>'
+             + '<span style="font-weight:600;">' + g.last_prices[item] + '</span>'
+             + '</div>';
+    }
+  }
+  pricesList.innerHTML = anyPrice ? phtml : '<span style="font-size:0.82rem;color:var(--clr-muted);">Noch kein Handel stattgefunden.</span>';
+
+  // Neues Hemmnis als Modal anzeigen
+  if (g.last_barrier && g.last_barrier !== lastBarrierShown) {
+    lastBarrierShown = g.last_barrier;
+    showModal('⚠️ Neues Handelshemmnis (Nr. ' + g.barrier_index + ')', g.last_barrier, 'barrier');
+  }
+}
+
+// =============================================================================
+// TUTORIAL
+// =============================================================================
+
+const TUTORIAL_STEPS = [
+  {
+    title: '&#x1F30D; Willkommen zum Protektionismus-Planspiel',
+    body: `<p>In diesem Planspiel übernehmt ihr gemeinsam alle fünf Länder und handelt miteinander. Über 7 Runden werden schrittweise reale <strong>Handelshemmnisse</strong> eingeführt – Zölle, Exportverbote, Subventionen.</p>
+           <p style="margin-top:10px;">Euer Ziel: die <strong>Zufriedenheit</strong> eures Landes so hoch wie möglich zu halten. Am Ende vergleicht ihr euer Ergebnis mit anderen Gruppen, die dasselbe Land gespielt haben.</p>`
+  },
+  {
+    title: '&#x1F4CB; Die fünf Länder',
+    body: `<table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin-bottom:16px;">
+             <thead><tr>
+               <th style="text-align:left;padding:6px 8px;color:var(--clr-muted);border-bottom:1px solid var(--clr-border);">Land</th>
+               <th style="text-align:left;padding:6px 8px;color:var(--clr-muted);border-bottom:1px solid var(--clr-border);">Stärke</th>
+               <th style="text-align:left;padding:6px 8px;color:var(--clr-muted);border-bottom:1px solid var(--clr-border);">Schwäche</th>
+             </tr></thead>
+             <tbody>
+               <tr><td style="padding:7px 8px;">🇺🇸 USA</td><td style="padding:7px 8px;">💻 Hightech, 🚗 Autos</td><td style="padding:7px 8px;">⛏️ Rohstoffe, 👕 Kleidung</td></tr>
+               <tr style="background:rgba(255,255,255,.03)"><td style="padding:7px 8px;">🇩🇪 Deutschland</td><td style="padding:7px 8px;">🚗 Autos, 💻 Hightech</td><td style="padding:7px 8px;">⛏️ Rohstoffe, 🌾 Lebensmittel</td></tr>
+               <tr><td style="padding:7px 8px;">🇨🇳 China</td><td style="padding:7px 8px;">👕 Kleidung, ⛏️ Rohstoffe</td><td style="padding:7px 8px;">💻 Hightech, 🚗 Autos</td></tr>
+               <tr style="background:rgba(255,255,255,.03)"><td style="padding:7px 8px;">🇧🇷 Brasilien</td><td style="padding:7px 8px;">⛏️ Rohstoffe, 🌾 Lebensmittel</td><td style="padding:7px 8px;">💻 Hightech, 🚗 Autos</td></tr>
+               <tr><td style="padding:7px 8px;">🇮🇳 Indien</td><td style="padding:7px 8px;">👕 Kleidung, 🌾 Lebensmittel</td><td style="padding:7px 8px;">⛏️ Rohstoffe, 🚗 Autos</td></tr>
+             </tbody>
+           </table>
+
+           <p style="font-size:0.82rem;color:var(--clr-muted);margin-bottom:10px;">So sieht eine Länderkarte im Spiel aus – hier am Beispiel 🇺🇸 USA:</p>
+
+           <div style="background:var(--clr-card);border:1px solid var(--clr-border);border-radius:10px;padding:14px 16px;font-size:0.82rem;">
+             <div style="font-weight:700;font-size:0.95rem;margin-bottom:10px;">🇺🇸 USA</div>
+
+             <!-- Geld -->
+             <div style="display:grid;grid-template-columns:100px 36px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+               <span style="color:var(--clr-muted);">Geld</span>
+               <span style="color:#22c55e;font-weight:700;">50</span>
+               <span style="color:var(--clr-muted);font-size:0.75rem;">← Budget für Einkäufe</span>
+             </div>
+             <!-- Zufriedenheit -->
+             <div style="display:grid;grid-template-columns:100px 36px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+               <span style="color:var(--clr-muted);">Zufriedenheit</span>
+               <span style="color:#22c55e;font-weight:700;">80</span>
+               <span style="color:var(--clr-muted);font-size:0.75rem;">← Hauptziel, max. 100</span>
+             </div>
+             <!-- Zufriedenheitsbalken -->
+             <div style="background:var(--clr-surface);border-radius:4px;height:6px;margin:4px 0 8px;overflow:hidden;">
+               <div style="width:80%;height:100%;background:#22c55e;border-radius:4px;"></div>
+             </div>
+             <!-- Warenvorräte -->
+             <div style="display:grid;grid-template-columns:120px 36px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+               <span style="color:var(--clr-muted);">💻 Hightech</span>
+               <span style="color:#22c55e;font-weight:700;">3</span>
+               <span style="color:var(--clr-muted);font-size:0.75rem;">← Vorrat, kann gehandelt werden</span>
+             </div>
+             <div style="display:grid;grid-template-columns:120px 36px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+               <span style="color:var(--clr-muted);">⛏️ Rohstoffe</span>
+               <span style="color:#22c55e;font-weight:700;">2</span>
+               <span style="color:var(--clr-muted);font-size:0.75rem;">← nötig für Industrie (USA & DE)</span>
+             </div>
+             <div style="display:grid;grid-template-columns:120px 36px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+               <span style="color:var(--clr-muted);">🚗 Autos</span>
+               <span style="color:#22c55e;font-weight:700;">1</span>
+               <span style="color:var(--clr-muted);font-size:0.75rem;">← Vorrat, kann gehandelt werden</span>
+             </div>
+             <div style="display:grid;grid-template-columns:120px 36px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+               <span style="color:var(--clr-muted);">🌾 Lebensmittel</span>
+               <span style="color:#22c55e;font-weight:700;">1</span>
+               <span style="color:var(--clr-muted);font-size:0.75rem;">← Vorrat, kann gehandelt werden</span>
+             </div>
+             <div style="display:grid;grid-template-columns:120px 36px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+               <span style="color:var(--clr-muted);">👕 Kleidung</span>
+               <span style="color:#22c55e;font-weight:700;">1</span>
+               <span style="color:var(--clr-muted);font-size:0.75rem;">← Vorrat, kann gehandelt werden</span>
+             </div>
+             <!-- Produktion -->
+             <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--clr-border);">
+               <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--clr-muted);margin-bottom:6px;">Produktion / Runde</div>
+               <div style="display:grid;grid-template-columns:120px 36px 1fr;align-items:center;padding:3px 0;">
+                 <span style="color:var(--clr-muted);">💻 Hightech</span>
+                 <span style="color:#22c55e;font-weight:600;">+2</span>
+                 <span style="color:var(--clr-muted);font-size:0.75rem;">← wird automatisch erzeugt</span>
+               </div>
+               <div style="display:grid;grid-template-columns:120px 36px 1fr;align-items:center;padding:3px 0;">
+                 <span style="color:var(--clr-muted);">⛏️ Rohstoffe</span>
+                 <span style="color:#ef4444;font-weight:600;">−2</span>
+                 <span style="color:var(--clr-muted);font-size:0.75rem;">← Industrieverbrauch</span>
+               </div>
+               <div style="display:grid;grid-template-columns:120px 36px 1fr;align-items:center;padding:3px 0;">
+                 <span style="color:var(--clr-muted);">🚗 Autos</span>
+                 <span style="color:#22c55e;font-weight:600;">+1</span>
+                 <span style="color:var(--clr-muted);font-size:0.75rem;">← wird automatisch erzeugt</span>
+               </div>
+               <div style="display:grid;grid-template-columns:120px 36px 1fr;align-items:center;padding:3px 0;">
+                 <span style="color:var(--clr-muted);">🌾 Lebensmittel</span>
+                 <span style="color:#ef4444;font-weight:600;">−1</span>
+                 <span style="color:var(--clr-muted);font-size:0.75rem;">← Bevölkerungsverbrauch</span>
+               </div>
+               <div style="display:grid;grid-template-columns:120px 36px 1fr;align-items:center;padding:3px 0;">
+                 <span style="color:var(--clr-muted);">👕 Kleidung</span>
+                 <span style="color:#ef4444;font-weight:600;">−2</span>
+                 <span style="color:var(--clr-muted);font-size:0.75rem;">← Bevölkerungsverbrauch</span>
+               </div>
+             </div>
+           </div>
+
+           <p style="margin-top:10px;font-size:0.82rem;color:var(--clr-muted);">Fällt ein Vorrat unter 0, gibt es Strafpunkte auf die Zufriedenheit – handelt rechtzeitig, um das zu vermeiden.</p>`
+  },
+  {
+    title: '&#x1F4B0; Wie funktioniert der Handel?',
+    body: `<p>Im Handelsformular wählt ihr:</p>
+           <ul style="margin:10px 0 10px 16px;line-height:2;">
+             <li><strong>Verkäufer</strong> und <strong>Käufer</strong></li>
+             <li>Die <strong>Ware</strong> (💻 Hightech, ⛏️ Rohstoffe, 🚗 Autos, 🌾 Lebensmittel, 👕 Kleidung)</li>
+             <li><strong>Menge</strong> und <strong>Preis pro Einheit</strong></li>
+           </ul>
+           <p>Der Preis ist frei verhandelbar. Zur Orientierung wird der zuletzt gehandelte Preis eines Gutes angezeigt.</p>
+           <p style="margin-top:10px;">⚠️ Lies dir die Handelshemmnisse genau durch und achte besonders auf die <strong>Gründe für ihre Einführung</strong>. Überlege anschließend, welche Auswirkungen sich für dein Land und seine Handelspartner ergeben könnten.</p>`
+  },
+  {
+    title: '&#x1F60A; Zufriedenheit & Strafen',
+    body: `<p>Die <strong>Zufriedenheit</strong> startet bei <strong>80</strong> und ist euer Hauptziel. Sie verändert sich am Ende jeder Runde:</p>
+           <ul style="margin:10px 0 10px 16px;line-height:2;">
+             <li>✅ Alle Konsumgüter gedeckt → <strong style="color:#22c55e;">+5 Zufriedenheit</strong></li>
+             <li>❌ Fehlende 💻 Hightech- oder 🚗 Auto-Einheit → <strong style="color:#ef4444;">-10 pro Einheit</strong></li>
+             <li>❌ Fehlende 🌾 Lebensmittel- oder 👕 Kleidungseinheit → <strong style="color:#ef4444;">-5 pro Einheit</strong></li>
+           </ul>
+           <p style="font-size:0.82rem;color:var(--clr-muted);">⛏️ Rohstoffe sind kein Konsumgut – sie werden nur für die Produktion von 💻 Hightech und 🚗 Autos benötigt (USA & Deutschland).</p>`
+  },
+  {
+    title: '&#x26A1; Handelshemmnisse',
+    body: `<p>In jeder der 7 Runden wird <strong>ein neues Handelshemmnis</strong> eingeführt – z.B. Zölle, Exportverbote oder Subventionen.</p>
+           <p style="margin-top:10px;">Ein Pop-up erklärt jedes neue Hemmnis ausführlich. Eine kompakte <strong>Zeitleiste</strong> hält alle bisherigen Hemmnisse dauerhaft sichtbar.</p>
+           <p style="margin-top:10px;">Beobachtet: Wie verändert sich euer Handelsverhalten? Welche Länder verlieren am meisten? Das sind genau die Fragen, die wir danach gemeinsam besprechen.</p>`
+  },
+  {
+    title: '&#x1F3C6; Spielende & Auswertung',
+    body: `<p>Nach <strong>Runde 7</strong> endet das Spiel automatisch. Ihr seht dann:</p>
+           <ul style="margin:10px 0 10px 16px;line-height:2;">
+             <li>&#x1F4CA; <strong>Ranking</strong> aller Länder nach Zufriedenheit</li>
+             <li>&#x1F4B0; <strong>Durchschnittspreise</strong> je Gut pro Runde</li>
+             <li>&#x1F4C8; <strong>Statistiken</strong>: Zufriedenheitsverlauf, Handelsvolumen, geblockte Trades</li>
+           </ul>
+           <p>Vergleicht euer Ergebnis mit den anderen Gruppen, die <strong>dasselbe Land</strong> gespielt haben – wer hat am besten auf die Hemmnisse reagiert?</p>`
+  },
+];
+
+let tutCurrentStep = 0;
+
+function renderTutStep() {
+  const step = TUTORIAL_STEPS[tutCurrentStep];
+  const total = TUTORIAL_STEPS.length;
+
+  // Dots
+  let dots = '';
+  for (let i = 0; i < total; i++) {
+    dots += '<div style="width:8px;height:8px;border-radius:50%;background:' +
+      (i === tutCurrentStep ? 'var(--clr-accent)' : 'var(--clr-border)') +
+      ';transition:background .2s;"></div>';
+  }
+  document.getElementById('tut-dots').innerHTML = dots;
+
+  document.getElementById('tut-content').innerHTML =
+    '<h3 style="font-size:1.15rem;font-weight:700;margin-bottom:14px;">' + step.title + '</h3>' +
+    '<div style="font-size:0.9rem;color:var(--clr-muted);line-height:1.7;">' + step.body + '</div>';
+
+  document.getElementById('tut-step-label').textContent = (tutCurrentStep + 1) + ' / ' + total;
+  document.getElementById('tut-back').style.visibility = tutCurrentStep === 0 ? 'hidden' : '';
+
+  const nextBtn = document.getElementById('tut-next');
+  if (tutCurrentStep === total - 1) {
+    nextBtn.textContent = 'Spiel starten ▶';
+    nextBtn.onclick = () => {
+      document.getElementById('tutorial-overlay').style.display = 'none';
+      document.getElementById('start-screen').style.display = '';
+    };
+  } else {
+    nextBtn.innerHTML = 'Weiter &#8594;';
+    nextBtn.onclick = () => tutStep(1);
+  }
+}
+
+function tutStep(dir) {
+  tutCurrentStep = Math.max(0, Math.min(TUTORIAL_STEPS.length - 1, tutCurrentStep + dir));
+  renderTutStep();
+}
+
+// Render first step on load
+renderTutStep();
+
+// =============================================================================
+// ENDSCREEN TABS & DURCHSCHNITTSPREISE
+// =============================================================================
+
+let endChartInstances = {};
+
+function destroyEndCharts() {
+  for (const key of Object.keys(endChartInstances)) {
+    endChartInstances[key].destroy();
+  }
+  endChartInstances = {};
+}
+
+function switchEndTab(tab) {
+  ['ranking', 'prices', 'stats'].forEach(t => {
+    document.getElementById('end-panel-' + t).style.display = t === tab ? '' : 'none';
+    document.getElementById('end-tab-btn-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'prices') renderAvgPricesChart();
+  if (tab === 'stats')  renderEndStats();
+}
+
+function renderAvgPricesChart() {
+  if (endChartInstances['avgPrices']) {
+    endChartInstances['avgPrices'].destroy();
+    delete endChartInstances['avgPrices'];
+  }
+  const g = game;
+  const rounds = Array.from({length: g.round - 1}, (_, i) => i + 1);
+  const commodities = ['hightech', 'resources', 'cars', 'food', 'clothes'];
+  const COMMODITY_COLORS = {
+    hightech:  '#3b82f6',
+    resources: '#f59e0b',
+    cars:      '#22c55e',
+    food:      '#a855f7',
+    clothes:   '#f97316',
+  };
+
+  const datasets = commodities.map(c => {
+    const data = rounds.map(r => {
+      const trades = g.trade_log.filter(t => t.round === r && t.commodity === c);
+      if (trades.length === 0) return null;
+      const avg = trades.reduce((sum, t) => sum + t.price, 0) / trades.length;
+      return Math.round(avg * 10) / 10;
+    });
+    return {
+      label: ITEM_LABELS_FULL[c],
+      data,
+      borderColor: COMMODITY_COLORS[c],
+      backgroundColor: COMMODITY_COLORS[c] + '33',
+      borderWidth: 2,
+      pointRadius: 4,
+      tension: 0.3,
+      spanGaps: true,
+    };
+  });
+
+  endChartInstances['avgPrices'] = new Chart(
+    document.getElementById('chart-avg-prices'),
+    {
+      type: 'line',
+      data: { labels: rounds.map(r => 'Runde ' + r), datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12 } } } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+          y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+        },
+      },
+    }
+  );
+}
+
+function renderEndStats() {
+  destroyEndCharts();
+  const g = game;
+  const countries = ['USA', 'Deutschland', 'China', 'Brasilien', 'Indien'];
+  const rounds = Array.from({length: g.round - 1}, (_, i) => i + 1);
+
+  // Satisfaction
+  const satLabels = g.satisfaction_history.map((s, i) => i === 0 ? 'Start' : 'Runde ' + i);
+  endChartInstances['sat'] = new Chart(
+    document.getElementById('chart-satisfaction-end'),
+    {
+      type: 'line',
+      data: {
+        labels: satLabels,
+        datasets: countries.map(c => ({
+          label: c,
+          data: g.satisfaction_history.map(s => s[c]),
+          borderColor: COUNTRY_COLORS[c],
+          backgroundColor: COUNTRY_COLORS[c] + '22',
+          borderWidth: 2, pointRadius: 3, tension: 0.3, fill: false,
+        })),
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+          y: { min: 0, max: 110, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+        },
+      },
+    }
+  );
+
+  // Volume
+  const volData = rounds.map(r => g.trade_log.filter(t => t.round === r).reduce((s, t) => s + t.amount, 0));
+  endChartInstances['vol'] = new Chart(
+    document.getElementById('chart-volume-end'),
+    {
+      type: 'bar',
+      data: {
+        labels: rounds.map(r => 'Runde ' + r),
+        datasets: [{ label: 'Einheiten', data: volData, backgroundColor: '#3b82f688', borderColor: '#3b82f6', borderWidth: 1 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+          y: { beginAtZero: true, ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: '#334155' } },
+        },
+      },
+    }
+  );
+
+  // USA-China
+  const ucData = rounds.map(r => g.trade_log.filter(t => t.round === r && ((t.from === 'USA' && t.to === 'China') || (t.from === 'China' && t.to === 'USA'))).reduce((s, t) => s + t.amount, 0));
+  endChartInstances['uc'] = new Chart(
+    document.getElementById('chart-usa-china-end'),
+    {
+      type: 'bar',
+      data: {
+        labels: rounds.map(r => 'Runde ' + r),
+        datasets: [{ label: 'Einheiten', data: ucData, backgroundColor: '#ef444488', borderColor: '#ef4444', borderWidth: 1 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+          y: { beginAtZero: true, ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: '#334155' } },
+        },
+      },
+    }
+  );
+
+  // Blocked
+  const blockedEl = document.getElementById('blocked-stats-end');
+  const labels = {
+    'USA_hightech_to_China':    '🚫 USA → China: Hightech',
+    'china_resources_to_USA':   '🚫 China → USA: Rohstoffe',
+    'china_clothes_to_Germany': '🚫 China → Deutschland: Kleidung',
+  };
+  if (g.blocked_log.length === 0) {
+    blockedEl.innerHTML = '<p class="no-data">Keine geblockten Versuche.</p>';
+  } else {
+    const counts = {};
+    for (const b of g.blocked_log) counts[b.restriction] = (counts[b.restriction] || 0) + 1;
+    let html = '<ul class="blocked-list">';
+    for (const [key, count] of Object.entries(counts)) {
+      html += '<li class="blocked-item"><span class="blocked-count">' + count + 'x</span><span>' + (labels[key] || key) + '</span></li>';
+    }
+    html += '<li class="blocked-item" style="border-top:1px solid var(--clr-border);margin-top:6px;padding-top:10px;"><span class="blocked-count">' + g.blocked_log.length + 'x</span><span style="font-weight:600;">Gesamt</span></li></ul>';
+    blockedEl.innerHTML = html;
+  }
+}
+
+// =============================================================================
+// EVENT HANDLER
+// =============================================================================
+
+const SAVE_KEY = 'handelssimulation_save';
+
+function saveGame() {
+  if (!game) return;
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ game, lastBarrierShown }));
+  } catch(e) { /* localStorage nicht verfügbar */ }
+}
+
+function loadSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+function clearSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+}
+
+function enterGame() {
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display  = '';
+  renderGame();
+  updateStockHint();
+}
+
+function startGame() {
+  clearSave();
+  game = createNewGame();
+  lastBarrierShown = '';
+  saveGame();
+  enterGame();
+}
+
+function continueGame() {
+  const saved = loadSave();
+  if (!saved) { startGame(); return; }
+  game = saved.game;
+  lastBarrierShown = saved.lastBarrierShown || '';
+  enterGame();
+}
+
+function resetGame() {
+  if (!confirm('Wirklich neu starten? Alle Fortschritte gehen verloren.')) return;
+  clearSave();
+  document.getElementById('endscreen-overlay').classList.remove('active');
+  destroyCharts();
+  switchTab('game');
+  game = createNewGame();
+  lastBarrierShown = '';
+  saveGame();
+  renderGame();
+  updateStockHint();
+}
+
+// Startseite initialisieren: Fortsetzen-Button zeigen wenn Speicherstand vorhanden
+(function initStartScreen() {
+  const saved = loadSave();
+  if (saved && saved.game && saved.game.round > 1) {
+    document.getElementById('continue-btn').style.display = '';
+    document.getElementById('save-info').style.display = '';
+    document.getElementById('save-info').textContent =
+      'Gespeicherter Stand: Runde ' + saved.game.round +
+      ', ' + saved.game.barrier_index + ' / 6 Hemmnisse';
+  }
+})();
+
+function nextRound() {
+  // Zufriedenheit vor der Runde merken (für Flash-Animation)
+  const oldSatisfaction = {};
+  for (const country of Object.keys(game.countries)) {
+    oldSatisfaction[country] = game.countries[country].satisfaction;
+  }
+
+  applyRound(game);
+  saveGame();
+  renderGame();
+  updateStockHint();
+
+  // Flash-Animation auf Karten
+  flashCards(oldSatisfaction);
+
+  // Banner bei neuem Hemmnis
+  if (game.last_barrier && game.last_barrier !== lastBarrierShown) {
+    showBarrierBanner(game.last_barrier);
+  }
+
+  if (game.round > 7) showEndscreen();
+}
+
+function showEndscreen() {
+  const countries = game.countries;
+  const MEDALS = ['🥇', '🥈', '🥉'];
+
+  // Nach Zufriedenheit absteigend sortieren
+  const ranked = Object.entries(countries)
+    .map(([name, c]) => ({ name, ...c }))
+    .sort((a, b) => b.satisfaction - a.satisfaction);
+
+  let html = '<thead><tr>'
+    + '<th>Platz</th><th>Land</th>'
+    + '<th>Zufriedenheit</th><th>Veränderung</th><th>Geld</th>'
+    + '</tr></thead><tbody>';
+
+  ranked.forEach((c, i) => {
+    const delta  = c.satisfaction - 80;
+    const dSign  = delta >= 0 ? '+' : '';
+    const dColor = delta >= 0 ? 'var(--clr-green)' : 'var(--clr-red)';
+    const place  = i < 3 ? MEDALS[i] : '<span class="rank-num">' + (i + 1) + '.</span>';
+    const flag   = FLAGS[c.name] || '';
+
+    html += '<tr>'
+      + '<td style="text-align:center;">' + place + '</td>'
+      + '<td>' + flag + ' <strong>' + c.name + '</strong></td>'
+      + '<td><span style="font-weight:700;color:' + (c.satisfaction >= 80 ? 'var(--clr-green)' : 'var(--clr-red)') + ';">' + c.satisfaction + '</span></td>'
+      + '<td style="color:' + dColor + ';font-weight:600;">' + dSign + delta + '</td>'
+      + '<td style="color:var(--clr-muted);">' + Math.round(c.money) + '</td>'
+      + '</tr>';
+  });
+
+  html += '</tbody>';
+  document.getElementById('ranking-table').innerHTML = html;
+  // Endscreen-Tabs zurücksetzen
+  destroyEndCharts();
+  switchEndTab('ranking');
+  document.getElementById('endscreen-overlay').classList.add('active');
+}
+
+function updateStockHint() {
+  if (!game) return;
+  const from      = document.getElementById('from').value;
+  const commodity = document.getElementById('commodity').value;
+  const stock     = game.countries[from][commodity];
+  const hint      = document.getElementById('stock-hint');
+  if (!hint) return;
+  const color = stock <= 0 ? 'var(--clr-red)' : stock <= 2 ? 'var(--clr-yellow)' : 'var(--clr-green)';
+  hint.innerHTML = '– Verfügbar: <span style="color:' + color + ';font-weight:600;">' + stock + '</span>';
+}
+
+document.getElementById('from').addEventListener('change', updateStockHint);
+document.getElementById('commodity').addEventListener('change', updateStockHint);
+
+function submitTrade(e) {
+  e.preventDefault();
+  const from      = document.getElementById('from').value;
+  const to        = document.getElementById('to').value;
+  const commodity = document.getElementById('commodity').value;
+  const amount    = parseInt(document.getElementById('amount').value, 10);
+  const price     = parseInt(document.getElementById('price').value, 10);
+
+  if (from === to) {
+    showToast('Verkäufer und Käufer müssen verschieden sein.', true);
+    return;
+  }
+
+  const result = executeTrade(game, from, to, commodity, amount, price);
+
+  if (result.error) {
+    showToast(result.error, true);
+  } else {
+    saveGame();
+    renderGame();
+    updateStockHint();
+    showToast('Handel erfolgreich!', false);
+  }
+}
+
+// =============================================================================
+// MODAL & TOAST
+// =============================================================================
+
+function flashCards(oldSatisfaction) {
+  for (const country of Object.keys(oldSatisfaction)) {
+    const card = document.getElementById('card-' + country);
+    if (!card) continue;
+    const delta = game.countries[country].satisfaction - oldSatisfaction[country];
+    if (delta === 0) continue;
+    card.classList.remove('flash-green', 'flash-red');
+    // Force reflow so animation restarts
+    void card.offsetWidth;
+    card.classList.add(delta > 0 ? 'flash-green' : 'flash-red');
+  }
+}
+
+let bannerTimer = null;
+function showBarrierBanner(text) {
+  const el = document.getElementById('barrier-banner');
+  el.textContent = '⚠️ Neues Handelshemmnis: ' + text.split('–')[0].trim().substring(0, 80) + ' …';
+  el.classList.add('show');
+  if (bannerTimer) clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function showModal(title, body, type) {
+  const box = document.getElementById('modal-box');
+  box.className = 'modal-box';
+  if (type) box.classList.add('modal-' + type);
+  document.getElementById('modal-title').innerHTML = title;
+  document.getElementById('modal-body').textContent = body;
+  document.getElementById('modal-overlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
