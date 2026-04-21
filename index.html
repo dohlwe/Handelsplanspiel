@@ -1110,6 +1110,9 @@ function executeTrade(g, from, to, commodity, amount, price) {
   const buyer  = g.countries[to];
   const total  = effectivePrice * amount;
 
+  if (seller[commodity] < amount)
+    return {error: 'Nicht genügend Warenbestand beim Verkäufer.'};
+
   if (buyer.money < total)
     return {error: 'Nicht genügend Geld beim Käufer.'};
 
